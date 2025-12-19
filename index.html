@@ -8,48 +8,42 @@
 <style>
   body {
     margin: 0;
-    font-family: system-ui, sans-serif;
     background: #111;
     color: #fff;
+    font-family: system-ui, sans-serif;
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     height: 100vh;
     text-align: center;
   }
 
   #contenedor {
-    max-width: 320px;
-    padding: 20px;
+    width: 90%;
+    max-width: 360px;
   }
 
   button {
-    margin-top: 20px;
+    margin-top: 16px;
     padding: 12px 20px;
-    border: none;
-    border-radius: 8px;
-    background: #fff;
-    color: #000;
     font-size: 1rem;
+    border-radius: 8px;
+    border: none;
     cursor: pointer;
   }
 
-  #juego {
-    margin-top: 20px;
-    display: none;
-  }
-
   canvas {
+    display: block;
+    margin: 20px auto;
     background: #000;
-    border: 2px solid #fff; /* ÁREA DELIMITADA */
-    border-radius: 8px;
+    border: 3px solid #fff;
+    border-radius: 10px;
     touch-action: none;
   }
 
   #instrucciones {
     font-size: 0.75rem;
     opacity: 0.6;
-    margin-top: 10px;
   }
 </style>
 </head>
@@ -61,144 +55,115 @@
 
   <button onclick="iniciarSnake()">Jugar Snake</button>
 
-  <div id="juego">
-    <canvas id="canvas" width="300" height="300"></canvas>
-    <div id="instrucciones">Desliza el dedo para cambiar dirección</div>
-  </div>
+  <canvas id="canvas" width="320" height="320"></canvas>
+  <div id="instrucciones">Desliza para mover el snake</div>
 
 </div>
 
 <script>
-/* ---------- MENSAJES ---------- */
+/* ========= MENSAJE ========= */
 
 const mensajes = {
-  lunes: {
-    mañana: "Lunes suave, mente despierta.",
-    tarde: "El lunes ya gastó sus mejores cartas.",
-    noche: "Sobreviviste al lunes. Victoria."
-  },
-  martes: {
-    mañana: "Martes: el verdadero inicio.",
-    tarde: "Buen ritmo, sigue así.",
-    noche: "Martes ganado sin drama."
-  },
-  miercoles: {
-    mañana: "Mitad de semana, sigues firme.",
-    tarde: "Equilibrio perfecto.",
-    noche: "Semana domada."
-  },
-  jueves: {
-    mañana: "Jueves coopera.",
-    tarde: "Ya se siente el final.",
-    noche: "Huele a viernes."
-  },
-  viernes: {
-    mañana: "Viernes aprobado.",
-    tarde: "Modo fin activado.",
-    noche: "La noche llama."
-  },
-  sabado: {
-    mañana: "Despertar sin culpas.",
-    tarde: "El día es tuyo.",
-    noche: "Noche libre."
-  },
-  domingo: {
-    mañana: "Calma premium.",
-    tarde: "Pausa necesaria.",
-    noche: "Mañana empieza de nuevo."
-  }
+  lunes: { mañana: "Lunes suave, mente despierta.", tarde: "El lunes ya gastó sus mejores cartas.", noche: "Sobreviviste al lunes." },
+  martes:{ mañana:"Martes: ahora sí.", tarde:"Buen ritmo.", noche:"Martes ganado." },
+  miercoles:{ mañana:"Mitad lograda.", tarde:"Equilibrio.", noche:"Semana domada." },
+  jueves:{ mañana:"Jueves coopera.", tarde:"Ya casi.", noche:"Huele a viernes." },
+  viernes:{ mañana:"Viernes aprobado.", tarde:"Modo fin.", noche:"La noche llama." },
+  sabado:{ mañana:"Sin culpas.", tarde:"El día es tuyo.", noche:"Noche libre." },
+  domingo:{ mañana:"Calma premium.", tarde:"Pausa.", noche:"Mañana empieza." }
 };
 
-function mostrarMensaje() {
+function mostrarMensaje(){
   const ahora = new Date();
   const dias = ["domingo","lunes","martes","miercoles","jueves","viernes","sabado"];
   const dia = dias[ahora.getDay()];
-  const hora = ahora.getHours();
-
-  let segmento = "mañana";
-  if (hora >= 13 && hora < 19) segmento = "tarde";
-  if (hora >= 19) segmento = "noche";
-
-  document.getElementById("mensaje").innerText = mensajes[dia][segmento];
+  const h = ahora.getHours();
+  let momento = h < 13 ? "mañana" : h < 19 ? "tarde" : "noche";
+  document.getElementById("mensaje").innerText = mensajes[dia][momento];
 }
 
 mostrarMensaje();
 
-/* ---------- SNAKE ---------- */
+/* ========= SNAKE ========= */
 
-let canvas = document.getElementById("canvas");
-let ctx = canvas.getContext("2d");
-let snake, dir, food, intervalo;
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-function iniciarSnake() {
-  document.getElementById("juego").style.display = "block";
+const grid = 20;
+const tiles = canvas.width / grid;
 
-  snake = [{x: 150, y: 150}];
+let snake, dir, food, loop;
+
+function iniciarSnake(){
+  snake = [{x: 8, y: 8}];
   dir = {x: 0, y: 0};
-  food = generarComida();
+  food = nuevaComida();
 
-  ctx.clearRect(0, 0, 300, 300);
-  ctx.fillStyle = "#fff";
-  ctx.font = "14px sans-serif";
-  ctx.fillText("Desliza para moverte", 70, 150);
-
-  setTimeout(() => {
-    intervalo = setInterval(loop, 180);
-  }, 1000);
+  clearInterval(loop);
+  loop = setInterval(juego, 200);
 }
 
-function generarComida() {
+function nuevaComida(){
   return {
-    x: Math.floor(Math.random() * 15) * 20,
-    y: Math.floor(Math.random() * 15) * 20
+    x: Math.floor(Math.random() * tiles),
+    y: Math.floor(Math.random() * tiles)
   };
 }
 
-function loop() {
-  let head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+function juego(){
+  if (dir.x === 0 && dir.y === 0) return;
 
-  if (head.x < 0 || head.y < 0 || head.x >= 300 || head.y >= 300) {
-    dir = {x: 0, y: 0};
+  const cabeza = {
+    x: snake[0].x + dir.x,
+    y: snake[0].y + dir.y
+  };
+
+  if (
+    cabeza.x < 0 || cabeza.y < 0 ||
+    cabeza.x >= tiles || cabeza.y >= tiles
+  ){
+    dir = {x:0,y:0};
     return;
   }
 
-  snake.unshift(head);
+  snake.unshift(cabeza);
 
-  if (head.x === food.x && head.y === food.y) {
-    food = generarComida();
+  if (cabeza.x === food.x && cabeza.y === food.y){
+    food = nuevaComida();
   } else {
     snake.pop();
   }
 
-  ctx.clearRect(0, 0, 300, 300);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
   ctx.fillStyle = "red";
-  ctx.fillRect(food.x, food.y, 20, 20);
+  ctx.fillRect(food.x*grid, food.y*grid, grid, grid);
 
   ctx.fillStyle = "lime";
-  snake.forEach(p => ctx.fillRect(p.x, p.y, 20, 20));
+  snake.forEach(p =>
+    ctx.fillRect(p.x*grid, p.y*grid, grid, grid)
+  );
 }
 
-/* ---------- CONTROLES TÁCTILES ---------- */
+/* ========= CONTROLES TÁCTILES ========= */
 
-let startX, startY;
+let sx, sy;
 
 canvas.addEventListener("touchstart", e => {
-  startX = e.touches[0].clientX;
-  startY = e.touches[0].clientY;
+  sx = e.touches[0].clientX;
+  sy = e.touches[0].clientY;
 });
 
 canvas.addEventListener("touchend", e => {
-  let dx = e.changedTouches[0].clientX - startX;
-  let dy = e.changedTouches[0].clientY - startY;
+  const dx = e.changedTouches[0].clientX - sx;
+  const dy = e.changedTouches[0].clientY - sy;
 
-  if (Math.abs(dx) > Math.abs(dy)) {
-    dir = dx > 0 ? {x: 20, y: 0} : {x: -20, y: 0};
+  if (Math.abs(dx) > Math.abs(dy)){
+    dir = dx > 0 ? {x:1,y:0} : {x:-1,y:0};
   } else {
-    dir = dy > 0 ? {x: 0, y: 20} : {x: 0, y: -20};
+    dir = dy > 0 ? {x:0,y:1} : {x:0,y:-1};
   }
 });
 </script>
-
 </body>
 </html>
