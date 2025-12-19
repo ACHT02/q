@@ -23,8 +23,13 @@
     max-width: 360px;
   }
 
+  #mensaje {
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+  }
+
   button {
-    margin-top: 16px;
+    margin-top: 10px;
     padding: 12px 20px;
     font-size: 1rem;
     border-radius: 8px;
@@ -34,7 +39,7 @@
 
   canvas {
     display: block;
-    margin: 20px auto;
+    margin: 16px auto 6px;
     background: #000;
     border: 3px solid #fff;
     border-radius: 10px;
@@ -55,30 +60,64 @@
 
   <button onclick="iniciarSnake()">Jugar Snake</button>
 
-  <canvas id="canvas" width="320" height="320"></canvas>
-  <div id="instrucciones">Desliza para mover el snake</div>
+  <!-- Área +20% vertical -->
+  <canvas id="canvas" width="320" height="384"></canvas>
+
+  <div id="instrucciones">Desliza el dedo para mover el snake</div>
 
 </div>
 
 <script>
-/* ========= MENSAJE ========= */
+/* ========= MENSAJE POR DÍA Y HORA ========= */
 
 const mensajes = {
-  lunes: { mañana: "Lunes suave, mente despierta.", tarde: "El lunes ya gastó sus mejores cartas.", noche: "Sobreviviste al lunes." },
-  martes:{ mañana:"Martes: ahora sí.", tarde:"Buen ritmo.", noche:"Martes ganado." },
-  miercoles:{ mañana:"Mitad lograda.", tarde:"Equilibrio.", noche:"Semana domada." },
-  jueves:{ mañana:"Jueves coopera.", tarde:"Ya casi.", noche:"Huele a viernes." },
-  viernes:{ mañana:"Viernes aprobado.", tarde:"Modo fin.", noche:"La noche llama." },
-  sabado:{ mañana:"Sin culpas.", tarde:"El día es tuyo.", noche:"Noche libre." },
-  domingo:{ mañana:"Calma premium.", tarde:"Pausa.", noche:"Mañana empieza." }
+  lunes: {
+    mañana: "Lunes suave, mente despierta.",
+    tarde: "El lunes ya gastó sus mejores cartas.",
+    noche: "Sobreviviste al lunes."
+  },
+  martes: {
+    mañana: "Martes: ahora sí.",
+    tarde: "Buen ritmo.",
+    noche: "Martes ganado."
+  },
+  miercoles: {
+    mañana: "Mitad lograda.",
+    tarde: "Equilibrio.",
+    noche: "Semana domada."
+  },
+  jueves: {
+    mañana: "Jueves coopera.",
+    tarde: "Ya casi.",
+    noche: "Huele a viernes."
+  },
+  viernes: {
+    mañana: "Viernes aprobado.",
+    tarde: "Modo fin.",
+    noche: "La noche llama."
+  },
+  sabado: {
+    mañana: "Sin culpas.",
+    tarde: "El día es tuyo.",
+    noche: "Noche libre."
+  },
+  domingo: {
+    mañana: "Calma premium.",
+    tarde: "Pausa.",
+    noche: "Mañana empieza."
+  }
 };
 
-function mostrarMensaje(){
+function mostrarMensaje() {
   const ahora = new Date();
   const dias = ["domingo","lunes","martes","miercoles","jueves","viernes","sabado"];
   const dia = dias[ahora.getDay()];
-  const h = ahora.getHours();
-  let momento = h < 13 ? "mañana" : h < 19 ? "tarde" : "noche";
+  const hora = ahora.getHours();
+
+  let momento = "mañana";
+  if (hora >= 13 && hora < 19) momento = "tarde";
+  if (hora >= 19) momento = "noche";
+
   document.getElementById("mensaje").innerText = mensajes[dia][momento];
 }
 
@@ -90,27 +129,28 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 const grid = 20;
-const tiles = canvas.width / grid;
+const tilesX = canvas.width / grid;
+const tilesY = canvas.height / grid;
 
-let snake, dir, food, loop;
+let snake, dir, food, intervalo;
 
-function iniciarSnake(){
-  snake = [{x: 8, y: 8}];
-  dir = {x: 0, y: 0};
+function iniciarSnake() {
+  snake = [{ x: 8, y: 8 }];
+  dir = { x: 0, y: 0 };
   food = nuevaComida();
 
-  clearInterval(loop);
-  loop = setInterval(juego, 200);
+  clearInterval(intervalo);
+  intervalo = setInterval(juego, 200);
 }
 
-function nuevaComida(){
+function nuevaComida() {
   return {
-    x: Math.floor(Math.random() * tiles),
-    y: Math.floor(Math.random() * tiles)
+    x: Math.floor(Math.random() * tilesX),
+    y: Math.floor(Math.random() * tilesY)
   };
 }
 
-function juego(){
+function juego() {
   if (dir.x === 0 && dir.y === 0) return;
 
   const cabeza = {
@@ -118,50 +158,53 @@ function juego(){
     y: snake[0].y + dir.y
   };
 
+  // Bordes
   if (
     cabeza.x < 0 || cabeza.y < 0 ||
-    cabeza.x >= tiles || cabeza.y >= tiles
-  ){
-    dir = {x:0,y:0};
+    cabeza.x >= tilesX || cabeza.y >= tilesY
+  ) {
+    dir = { x: 0, y: 0 };
     return;
   }
 
   snake.unshift(cabeza);
 
-  if (cabeza.x === food.x && cabeza.y === food.y){
+  // Comer
+  if (cabeza.x === food.x && cabeza.y === food.y) {
     food = nuevaComida();
   } else {
     snake.pop();
   }
 
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Dibujar
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = "red";
-  ctx.fillRect(food.x*grid, food.y*grid, grid, grid);
+  ctx.fillRect(food.x * grid, food.y * grid, grid, grid);
 
   ctx.fillStyle = "lime";
   snake.forEach(p =>
-    ctx.fillRect(p.x*grid, p.y*grid, grid, grid)
+    ctx.fillRect(p.x * grid, p.y * grid, grid, grid)
   );
 }
 
 /* ========= CONTROLES TÁCTILES ========= */
 
-let sx, sy;
+let startX, startY;
 
 canvas.addEventListener("touchstart", e => {
-  sx = e.touches[0].clientX;
-  sy = e.touches[0].clientY;
+  startX = e.touches[0].clientX;
+  startY = e.touches[0].clientY;
 });
 
 canvas.addEventListener("touchend", e => {
-  const dx = e.changedTouches[0].clientX - sx;
-  const dy = e.changedTouches[0].clientY - sy;
+  const dx = e.changedTouches[0].clientX - startX;
+  const dy = e.changedTouches[0].clientY - startY;
 
-  if (Math.abs(dx) > Math.abs(dy)){
-    dir = dx > 0 ? {x:1,y:0} : {x:-1,y:0};
+  if (Math.abs(dx) > Math.abs(dy)) {
+    dir = dx > 0 ? { x: 1, y: 0 } : { x: -1, y: 0 };
   } else {
-    dir = dy > 0 ? {x:0,y:1} : {x:0,y:-1};
+    dir = dy > 0 ? { x: 0, y: 1 } : { x: 0, y: -1 };
   }
 });
 </script>
